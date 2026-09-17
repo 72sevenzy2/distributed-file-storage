@@ -13,5 +13,5 @@ type NOPDecoder struct{}
 
 func (n *NOPDecoder) Decode(r io.Reader, v any) error {
 	dec := gob.NewDecoder(r)
-	return dec.Decode(v)
+	return dec.Decode(&v)
 }

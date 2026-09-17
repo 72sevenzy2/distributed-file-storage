@@ -8,8 +8,9 @@ import (
 
 // Node represents a remote node which has established an connection to the server.
 type TCPNode struct {
-	Addr string
-	Conn net.Conn
+	Payload []byte
+	Addr    string
+	Conn    net.Conn
 }
 
 type TCPTransport struct {
@@ -25,6 +26,7 @@ type TCPTransport struct {
 func NewTCPTransport(Addr string) *TCPTransport {
 	return &TCPTransport{
 		ListenAddr: Addr,
+		Decoder:    &NOPDecoder{},
 		Nodes:      make(map[string]*TCPNode),
 	}
 }
@@ -32,10 +34,33 @@ func NewTCPTransport(Addr string) *TCPTransport {
 func (n *TCPTransport) ListenAndAccept() {
 	ln, err := net.Listen("tcp", n.ListenAddr)
 	if err != nil {
-		n.Logger.Error("ERR", "TCP_ERROR", err)
+		n.Logger.Error("ERR", "TCP_HANDSHAKE_ERR", err)
 		return
 	}
 	defer ln.Close()
 
 	n.listener = ln
+
+	go n.acceptLoop()
+}
+
+func (n *TCPTransport) acceptLoop() {
+	var msg []byte
+	for {
+		conn, err := n.listener.Accept()
+		if err != nil {
+			conn.Close()
+			n.Logger.Error("ERR", "TCP_ACCEPT_ERR", err)
+			return
+		}
+		defer conn.Close()
+		n.Logger.Info("INCOMING_CONNECTION", "addr", conn.RemoteAddr().String())
+
+		if err2 := n.Decoder.Decode(conn, msg); err2 != nil {
+			conn.Close()
+			n.Logger.Error("ERR", "TCP_DECODING_ERR", err2)
+			return // drop connection upon unsuccessful payload.
+		}
+		n.Logger.Info("PAYLOAD", "from", conn.RemoteAddr().String(), "payload", msg)
+	}
 }
