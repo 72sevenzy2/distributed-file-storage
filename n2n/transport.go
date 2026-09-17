@@ -6,9 +6,10 @@ import (
 	"sync"
 )
 
-// Node represents a remote connection.
-type Node interface {
-	Close() error
+// Node represents a remote node which has established an connection to the server.
+type TCPNode struct {
+	Addr string
+	Conn net.Conn
 }
 
 type TCPTransport struct {
@@ -17,12 +18,13 @@ type TCPTransport struct {
 	listener   net.Listener
 
 	mu    sync.RWMutex // allows concurrent reads without blocking for node-to-node communication.
-	Nodes map[string]net.Conn
+	Nodes map[string]*TCPNode
 }
 
 func NewTCPTransport(Addr string) *TCPTransport {
 	return &TCPTransport{
 		ListenAddr: Addr,
+		Nodes:      make(map[string]*TCPNode),
 	}
 }
 
