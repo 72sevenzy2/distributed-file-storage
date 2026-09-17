@@ -15,6 +15,7 @@ type TCPNode struct {
 type TCPTransport struct {
 	ListenAddr string
 	Logger     slog.Logger
+	Decoder    Decoder
 	listener   net.Listener
 
 	mu    sync.RWMutex // allows concurrent reads without blocking for node-to-node communication.
