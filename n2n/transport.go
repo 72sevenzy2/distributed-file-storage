@@ -11,10 +11,11 @@ type Transport interface {
 }
 
 type TCPTransport struct {
-	ListenAddr string
-	Logger     slog.Logger
-	Decoder    Decoder
-	listener   net.Listener
+	ListenAddr  string
+	Logger      slog.Logger
+	Decoder     Decoder
+	listener    net.Listener
+	Handshakefn Handshaker
 
 	mu    sync.RWMutex // allows concurrent reads without blocking for node-to-node communication.
 	Nodes map[string]Node
@@ -44,13 +45,12 @@ func (n *TCPTransport) ListenAndAccept() {
 func (n *TCPTransport) acceptLoop() {
 	var msg []byte
 	for {
-		conn, err := n.listener.Accept()
-		// todo: add handshake func
+		conn, err := n.Handshakefn.HandshakeFn()
 		if err != nil {
-			conn.Close()
-			n.Logger.Error("ERR", "TCP_ACCEPT_ERR", err)
+			n.Logger.Error("ERR", "TCP_HANDSHAKE_ERR", err)
 			return
 		}
+
 		defer conn.Close()
 		n.Logger.Info("INCOMING_CONNECTION", "addr", conn.RemoteAddr().String())
 
