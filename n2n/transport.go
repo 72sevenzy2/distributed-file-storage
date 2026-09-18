@@ -6,16 +6,8 @@ import (
 	"sync"
 )
 
-// TCPNode represents the remote nodes connection methodology.
-type TCPNode struct {
-	Payload []byte
-	Addr    string
-	Conn    net.Conn
-}
-
-// Close() implements the Node interface.
-func (n *TCPNode) Close() error {
-	return n.Conn.Close()
+type Transport interface {
+	ListenAndAccept()
 }
 
 type TCPTransport struct {
@@ -28,7 +20,7 @@ type TCPTransport struct {
 	Nodes map[string]Node
 }
 
-func NewTCPTransport(Addr string) *TCPTransport {
+func NewTCPTransport(Addr string) Transport {
 	return &TCPTransport{
 		ListenAddr: Addr,
 		Decoder:    &GOBDecoder{},
@@ -70,7 +62,7 @@ func (n *TCPTransport) acceptLoop() {
 		n.mu.Lock()
 		n.Nodes[conn.RemoteAddr().String()] = &TCPNode{
 			Payload: msg,
-			Addr:    conn.RemoteAddr().String(),
+			Addr:    conn.RemoteAddr(),
 			Conn:    conn,
 		}
 		n.mu.Unlock()
