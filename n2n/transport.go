@@ -31,7 +31,7 @@ type TCPTransport struct {
 func NewTCPTransport(Addr string) *TCPTransport {
 	return &TCPTransport{
 		ListenAddr: Addr,
-		Decoder:    &NOPDecoder{},
+		Decoder:    &GOBDecoder{},
 		Nodes:      make(map[string]Node),
 	}
 }
@@ -53,6 +53,7 @@ func (n *TCPTransport) acceptLoop() {
 	var msg []byte
 	for {
 		conn, err := n.listener.Accept()
+		// todo: add handshake func
 		if err != nil {
 			conn.Close()
 			n.Logger.Error("ERR", "TCP_ACCEPT_ERR", err)
