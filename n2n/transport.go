@@ -61,6 +61,14 @@ func (n *TCPTransport) acceptLoop() {
 			n.Logger.Error("ERR", "TCP_DECODING_ERR", err2)
 			return // drop connection upon unsuccessful payload.
 		}
+		n.mu.Lock()
+		n.Nodes[conn.RemoteAddr().String()] = &TCPNode{
+			Payload: msg,
+			Addr:    conn.RemoteAddr().String(),
+			Conn:    conn,
+		}
+		n.mu.Unlock()
+
 		n.Logger.Info("PAYLOAD", "from", conn.RemoteAddr().String(), "payload", msg)
 	}
 }
