@@ -6,11 +6,16 @@ import (
 	"sync"
 )
 
-// Node represents a remote node which has established an connection to the server.
+// TCPNode represents the remote nodes connection methodology.
 type TCPNode struct {
 	Payload []byte
 	Addr    string
 	Conn    net.Conn
+}
+
+// Close() implements the Node interface.
+func (n *TCPNode) Close() error {
+	return n.Conn.Close()
 }
 
 type TCPTransport struct {
@@ -20,14 +25,14 @@ type TCPTransport struct {
 	listener   net.Listener
 
 	mu    sync.RWMutex // allows concurrent reads without blocking for node-to-node communication.
-	Nodes map[string]*TCPNode
+	Nodes map[string]Node
 }
 
 func NewTCPTransport(Addr string) *TCPTransport {
 	return &TCPTransport{
 		ListenAddr: Addr,
 		Decoder:    &NOPDecoder{},
-		Nodes:      make(map[string]*TCPNode),
+		Nodes:      make(map[string]Node),
 	}
 }
 
