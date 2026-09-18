@@ -18,5 +18,9 @@ type TCPNode struct {
 
 // Close() implements the Node interface.
 func (n *TCPNode) Close() error {
+	if n.Conn == nil { // safeguards against nil connections if it were closed elsewhere.
+		return nil
+	}
+
 	return n.Conn.Close()
 }

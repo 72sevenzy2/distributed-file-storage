@@ -2,19 +2,22 @@ package n2n
 
 import (
 	"errors"
+	"fmt"
 	"net"
 )
 
 type Handshaker interface {
-	HandshakeFn() (net.Conn, error)
+	HandshakeFn(net.Listener) (net.Conn, error)
 }
 
 var TCPHandshakeErr = errors.New("TCP handshake error")
 
-func (n *TCPTransport) HandshakeFn() (net.Conn, error) {
-	conn, err := n.listener.Accept()
+type TCPHandshake struct{}
+
+func (n *TCPHandshake) HandshakeFn(ln net.Listener) (net.Conn, error) {
+	conn, err := ln.Accept()
 	if err != nil {
-		return nil, TCPHandshakeErr
+		return nil, fmt.Errorf("%w: %v", TCPHandshakeErr, err)
 	}
 	return conn, nil
 }

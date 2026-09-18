@@ -23,9 +23,11 @@ type TCPTransport struct {
 
 func NewTCPTransport(Addr string) Transport {
 	return &TCPTransport{
-		ListenAddr: Addr,
-		Decoder:    &GOBDecoder{},
-		Nodes:      make(map[string]Node),
+		ListenAddr:  Addr,
+		Decoder:     &GOBDecoder{},
+		Logger:      *slog.Default(),
+		Handshakefn: &TCPHandshake{},
+		Nodes:       make(map[string]Node),
 	}
 }
 
@@ -35,7 +37,6 @@ func (n *TCPTransport) ListenAndAccept() {
 		n.Logger.Error("ERR", "TCP_HANDSHAKE_ERR", err)
 		return
 	}
-	defer ln.Close()
 
 	n.listener = ln
 
@@ -45,19 +46,18 @@ func (n *TCPTransport) ListenAndAccept() {
 func (n *TCPTransport) acceptLoop() {
 	var msg []byte
 	for {
-		conn, err := n.Handshakefn.HandshakeFn()
+		conn, err := n.Handshakefn.HandshakeFn(n.listener)
 		if err != nil {
 			n.Logger.Error("ERR", "TCP_HANDSHAKE_ERR", err)
-			return
+			continue
 		}
 
-		defer conn.Close()
 		n.Logger.Info("INCOMING_CONNECTION", "addr", conn.RemoteAddr().String())
 
 		if err2 := n.Decoder.Decode(conn, msg); err2 != nil {
 			conn.Close()
 			n.Logger.Error("ERR", "TCP_DECODING_ERR", err2)
-			return // drop connection upon unsuccessful payload.
+			continue
 		}
 		n.mu.Lock()
 		n.Nodes[conn.RemoteAddr().String()] = &TCPNode{
