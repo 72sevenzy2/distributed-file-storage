@@ -6,19 +6,19 @@ import (
 )
 
 type Decoder interface {
-	Decode(r io.Reader, v any) error
+	Decode(r io.Reader, v *TCPNode) error
 }
 
 type GOBDecoder struct{}
 
-func (g *GOBDecoder) Decode(r io.Reader, v any) error {
+func (g *GOBDecoder) Decode(r io.Reader, v *TCPNode) error {
 	dec := gob.NewDecoder(r)
-	return dec.Decode(v)
+	return dec.Decode(&v.Payload)
 }
 
 type NOPDecoder struct{}
 
-func (n *NOPDecoder) Decode(r io.Reader, v any) error {
-	_, err := r.Read(v.([]byte))
+func (n *NOPDecoder) Decode(r io.Reader, v *TCPNode) error {
+	_, err := r.Read(v.Payload)
 	return err
 }
