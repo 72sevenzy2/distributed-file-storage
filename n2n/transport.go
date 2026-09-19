@@ -1,6 +1,7 @@
 package n2n
 
 import (
+	"errors"
 	"log/slog"
 	"net"
 )
@@ -47,16 +48,19 @@ func (n *TCPTransport) ListenAndAccept() {
 }
 
 func (n *TCPTransport) acceptLoop() {
-	var msg []byte
 	decodingErrCount := 0 // temporary spam prevention
-
-	NodeDetails := TCPNode{}
 	for {
 		conn, err := n.Handshakefn.HandshakeFn(n.listener)
 		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				return
+			}
+
 			n.Logger.Error("ERR", "TCP_HANDSHAKE_ERR", err)
 			continue
 		}
+
+		NodeDetails := TCPNode{}
 
 		n.Logger.Info("INCOMING_CONNECTION", "addr", conn.RemoteAddr().String())
 
@@ -69,12 +73,11 @@ func (n *TCPTransport) acceptLoop() {
 			}
 			continue
 		}
-		NodeDetails.Payload = msg
 		NodeDetails.Addr = conn.RemoteAddr()
 		NodeDetails.Conn = conn
 
 		n.TCPNodeCh <- NodeDetails
 
-		n.Logger.Info("PAYLOAD", "from", conn.RemoteAddr().String(), "payload", msg)
+		n.Logger.Info("PAYLOAD", "from", conn.RemoteAddr().String(), "payload", NodeDetails.Payload)
 	}
 }
