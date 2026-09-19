@@ -3,11 +3,11 @@ package n2n
 import (
 	"log/slog"
 	"net"
-	"sync"
 )
 
 type Transport interface {
 	ListenAndAccept()
+	Consume() <-chan TCPNode
 }
 
 type TCPTransport struct {
@@ -16,9 +16,7 @@ type TCPTransport struct {
 	Decoder     Decoder
 	listener    net.Listener
 	Handshakefn Handshaker
-
-	mu    sync.RWMutex // allows concurrent reads without blocking for node-to-node communication.
-	Nodes map[string]Node
+	TCPNodeCh   chan TCPNode
 }
 
 func NewTCPTransport(Addr string) Transport {
@@ -27,8 +25,13 @@ func NewTCPTransport(Addr string) Transport {
 		Decoder:     &GOBDecoder{},
 		Logger:      *slog.Default(),
 		Handshakefn: &TCPHandshake{},
-		Nodes:       make(map[string]Node),
+		TCPNodeCh:   make(chan TCPNode),
 	}
+}
+
+// Consume() implements Transport interface.
+func (n *TCPTransport) Consume() <-chan TCPNode {
+	return n.TCPNodeCh
 }
 
 func (n *TCPTransport) ListenAndAccept() {
@@ -45,6 +48,9 @@ func (n *TCPTransport) ListenAndAccept() {
 
 func (n *TCPTransport) acceptLoop() {
 	var msg []byte
+	decodingErrCount := 0 // temporary spam prevention
+
+	NodeDetails := TCPNode{}
 	for {
 		conn, err := n.Handshakefn.HandshakeFn(n.listener)
 		if err != nil {
@@ -54,18 +60,20 @@ func (n *TCPTransport) acceptLoop() {
 
 		n.Logger.Info("INCOMING_CONNECTION", "addr", conn.RemoteAddr().String())
 
-		if err2 := n.Decoder.Decode(conn, msg); err2 != nil {
+		if err2 := n.Decoder.Decode(conn, &NodeDetails); err2 != nil {
+			decodingErrCount++
 			conn.Close()
 			n.Logger.Error("ERR", "TCP_DECODING_ERR", err2)
+			if decodingErrCount > 10 {
+				return
+			}
 			continue
 		}
-		n.mu.Lock()
-		n.Nodes[conn.RemoteAddr().String()] = &TCPNode{
-			Payload: msg,
-			Addr:    conn.RemoteAddr(),
-			Conn:    conn,
-		}
-		n.mu.Unlock()
+		NodeDetails.Payload = msg
+		NodeDetails.Addr = conn.RemoteAddr()
+		NodeDetails.Conn = conn
+
+		n.TCPNodeCh <- NodeDetails
 
 		n.Logger.Info("PAYLOAD", "from", conn.RemoteAddr().String(), "payload", msg)
 	}
