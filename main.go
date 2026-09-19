@@ -13,7 +13,7 @@ func main() {
 	go func() {
 		for {
 			msg := <-c.Consume()
-			fmt.Println("message:\n", msg)
+			fmt.Println("message:\n", msg.Payload)
 		}
 	}()
 

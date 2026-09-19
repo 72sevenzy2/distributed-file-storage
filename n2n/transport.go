@@ -23,7 +23,7 @@ type TCPTransport struct {
 func NewTCPTransport(Addr string) Transport {
 	return &TCPTransport{
 		ListenAddr:  Addr,
-		Decoder:     &GOBDecoder{},
+		Decoder:     &NOPDecoder{},
 		Logger:      *slog.Default(),
 		Handshakefn: &TCPHandshake{},
 		TCPNodeCh:   make(chan TCPNode),
@@ -60,24 +60,25 @@ func (n *TCPTransport) acceptLoop() {
 			continue
 		}
 
-		NodeDetails := TCPNode{}
+		// readloop
+		for {
+			NodeDetails := TCPNode{}
 
-		n.Logger.Info("INCOMING_CONNECTION", "addr", conn.RemoteAddr().String())
+			n.Logger.Info("INCOMING_CONNECTION", "addr", conn.RemoteAddr().String())
 
-		if err2 := n.Decoder.Decode(conn, &NodeDetails); err2 != nil {
-			decodingErrCount++
-			conn.Close()
-			n.Logger.Error("ERR", "TCP_DECODING_ERR", err2)
-			if decodingErrCount > 10 {
-				return
+			if err2 := n.Decoder.Decode(conn, &NodeDetails); err2 != nil {
+				decodingErrCount++
+				conn.Close()
+				n.Logger.Error("ERR", "TCP_DECODING_ERR", err2)
+				if decodingErrCount > 10 {
+					return
+				}
+				continue
 			}
-			continue
+			NodeDetails.Addr = conn.RemoteAddr()
+			NodeDetails.Conn = conn
+
+			n.TCPNodeCh <- NodeDetails
 		}
-		NodeDetails.Addr = conn.RemoteAddr()
-		NodeDetails.Conn = conn
-
-		n.TCPNodeCh <- NodeDetails
-
-		n.Logger.Info("PAYLOAD", "from", conn.RemoteAddr().String(), "payload", NodeDetails.Payload)
 	}
 }
