@@ -56,7 +56,6 @@ func (n *TCPTransport) ListenAndAccept() {
 }
 
 func (n *TCPTransport) acceptLoop() {
-	decodingErrCount := 0 // temporary spam prevention
 	for {
 		var conn net.Conn
 		var err error
@@ -69,7 +68,8 @@ func (n *TCPTransport) acceptLoop() {
 
 		conn, err = n.Handshakefn.HandshakeFn(n.listener)
 		if err != nil {
-			if errors.Is(err, net.ErrClosed) {
+			if errors.Is(err, net.ErrClosed) { // if the network connection had been closed, return.
+				conn.Close()
 				return
 			}
 
@@ -83,23 +83,23 @@ func (n *TCPTransport) acceptLoop() {
 			}
 		}
 
-		// readloop
-		for {
-			n.Logger.Info("INCOMING_CONNECTION", "addr", conn.RemoteAddr().String())
+		go n.readLoop(conn, NodeDetails)
+	}
+}
 
-			if err = n.Decoder.Decode(conn, &NodeDetails); err != nil {
-				decodingErrCount++
-				conn.Close()
-				n.Logger.Error("ERR", "TCP_DECODING_ERR", err)
-				if decodingErrCount > 10 {
-					return
-				}
-				continue
-			}
-			NodeDetails.Addr = conn.RemoteAddr()
-			NodeDetails.Conn = conn
+func (n *TCPTransport) readLoop(conn net.Conn, peer TCPNode) error {
+	// readloop
+	for {
+		n.Logger.Info("INCOMING_CONNECTION", "addr", conn.RemoteAddr().String())
 
-			n.TCPNodeCh <- NodeDetails
+		if err := n.Decoder.Decode(conn, &peer); err != nil {
+			conn.Close()
+			n.Logger.Error("ERR", "TCP_DECODING_ERR", err)
+			continue
 		}
+		peer.Addr = conn.RemoteAddr()
+		peer.Conn = conn
+
+		n.TCPNodeCh <- peer
 	}
 }
