@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	c := n2n.NewTCPTransport(":9000")
+	c := n2n.NewTCPTransport(":9000", n2n.NOPOnPeer)
 	c.ListenAndAccept()
 
 	go func() {

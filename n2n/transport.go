@@ -2,6 +2,7 @@ package n2n
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"net"
 )
@@ -17,15 +18,22 @@ type TCPTransport struct {
 	Decoder     Decoder
 	listener    net.Listener
 	Handshakefn Handshaker
-	TCPNodeCh   chan TCPNode
+
+	// OnPeer represents the Peers state upon establishing the connection to the server.
+	// Allows for pre-flight checks before connection.
+	OnPeer    func(TCPNode) error
+	TCPNodeCh chan TCPNode
 }
 
-func NewTCPTransport(Addr string) Transport {
+func NOPOnPeer(v TCPNode) error { return nil }
+
+func NewTCPTransport(Addr string, onPeer func(TCPNode) error) Transport {
 	return &TCPTransport{
 		ListenAddr:  Addr,
 		Decoder:     &NOPDecoder{},
 		Logger:      *slog.Default(),
 		Handshakefn: &TCPHandshake{},
+		OnPeer:      onPeer,
 		TCPNodeCh:   make(chan TCPNode),
 	}
 }
@@ -50,7 +58,16 @@ func (n *TCPTransport) ListenAndAccept() {
 func (n *TCPTransport) acceptLoop() {
 	decodingErrCount := 0 // temporary spam prevention
 	for {
-		conn, err := n.Handshakefn.HandshakeFn(n.listener)
+		var conn net.Conn
+		var err error
+		NodeDetails := TCPNode{}
+
+		defer func() {
+			fmt.Println("dropping a connection:", err)
+			conn.Close()
+		}() // runs when the connection is closed.
+
+		conn, err = n.Handshakefn.HandshakeFn(n.listener)
 		if err != nil {
 			if errors.Is(err, net.ErrClosed) {
 				return
@@ -60,16 +77,20 @@ func (n *TCPTransport) acceptLoop() {
 			continue
 		}
 
+		if n.OnPeer != nil {
+			if err = n.OnPeer(NodeDetails); err != nil {
+				return
+			}
+		}
+
 		// readloop
 		for {
-			NodeDetails := TCPNode{}
-
 			n.Logger.Info("INCOMING_CONNECTION", "addr", conn.RemoteAddr().String())
 
-			if err2 := n.Decoder.Decode(conn, &NodeDetails); err2 != nil {
+			if err = n.Decoder.Decode(conn, &NodeDetails); err != nil {
 				decodingErrCount++
 				conn.Close()
-				n.Logger.Error("ERR", "TCP_DECODING_ERR", err2)
+				n.Logger.Error("ERR", "TCP_DECODING_ERR", err)
 				if decodingErrCount > 10 {
 					return
 				}
