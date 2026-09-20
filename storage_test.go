@@ -7,7 +7,7 @@ import (
 
 func TestStorage(t *testing.T) {
 	storeOps := StorageOpts{
-		PathTransformFunc: DefaultPathTransformFunc,
+		PathTransformFunc: TransformPathFunc,
 	}
 	store := NewStorage(storeOps)
 
