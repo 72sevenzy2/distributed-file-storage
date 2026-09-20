@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"crypto/md5"
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
@@ -11,7 +9,7 @@ import (
 	"strings"
 )
 
-func TransformPathFunc(key string) string {
+func TransformPathFunc(key string) pathKey {
 	hash := sha1.Sum([]byte(key))
 	hashStr := hex.EncodeToString(hash[:])
 
@@ -24,17 +22,29 @@ func TransformPathFunc(key string) string {
 		paths[i] = hashStr[src:dist]
 	}
 
-	return strings.Join(paths, "/")
+	return pathKey{
+		FileName: strings.Join(paths, "/"),
+		Original: hashStr,
+	}
 }
 
-type PathTransformFunc func(string) string
+type PathTransformFunc func(string) pathKey
 
 type StorageOpts struct {
 	PathTransformFunc PathTransformFunc
 }
 
-func DefaultPathTransformFunc(v string) string {
-	return v
+func DefaultPathTransformFunc(v string) pathKey {
+	return pathKey{}
+}
+
+type pathKey struct {
+	FileName string
+	Original string
+}
+
+func (p pathKey) Filename() string {
+	return fmt.Sprintf("%s%s", p.FileName, p.Original)
 }
 
 type Storage struct {
@@ -49,20 +59,16 @@ func NewStorage(s StorageOpts) *Storage {
 
 func (s *Storage) writeToStream(key string, r io.Reader) error {
 	path := s.PathTransformFunc(key)
-	if err := os.MkdirAll(path, os.ModePerm); err != nil {
+	if err := os.MkdirAll(path.FileName, os.ModePerm); err != nil {
 		return err
 	}
-	buf := new(bytes.Buffer)
-	io.Copy(buf, r)
-
-	filenameBytes := md5.Sum(buf.Bytes())
-	filename := hex.EncodeToString(filenameBytes[:])
+	filename := path.Filename()
 	f, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
 
-	n, err := io.Copy(f, buf)
+	n, err := io.Copy(f, r)
 	if err != nil {
 		return err
 	}
