@@ -33,7 +33,7 @@ func (s *Storage) writeToStream(key string, r io.Reader) error {
 	}
 
 	filename := "some file name"
-	f, err := os.Open(path + "/" + filename)
+	f, err := os.Create(path + "/" + filename)
 	if err != nil {
 		return err
 	}
