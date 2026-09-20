@@ -1,11 +1,19 @@
 package main
 
-import "io"
+import (
+	"fmt"
+	"io"
+	"os"
+)
 
 type PathTransformFunc func(string) string
 
 type StorageOpts struct {
 	PathTransformFunc PathTransformFunc
+}
+
+func DefaultPathTransformFunc(v string) string {
+	return v
 }
 
 type Storage struct {
@@ -19,5 +27,23 @@ func NewStorage(s StorageOpts) *Storage {
 }
 
 func (s *Storage) writeToStream(key string, r io.Reader) error {
+	path := s.PathTransformFunc(key)
+	if err := os.MkdirAll(path, os.ModePerm); err != nil {
+		return err
+	}
+
+	filename := "some file name"
+	f, err := os.Open(path + "/" + filename)
+	if err != nil {
+		return err
+	}
+
+	n, err := io.Copy(f, r)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("number of bytes written to disk:", n)
+
 	return nil
 }

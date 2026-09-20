@@ -20,7 +20,7 @@ type TCPTransport struct {
 	Handshakefn Handshaker
 
 	// OnPeer represents the Peers state upon establishing the connection to the server.
-	// Allows for pre-flight checks before connection.
+	// Allows for pre-flight validation before the connection is established.
 	OnPeer    func(TCPNode) error
 	TCPNodeCh chan TCPNode
 }
