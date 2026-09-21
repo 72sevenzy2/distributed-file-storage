@@ -46,6 +46,15 @@ type pathKey struct {
 	Original string
 }
 
+// FirstFilepath returns the first of the nested directory in .FileName
+func (p pathKey) FirstFilepath() string {
+	path := strings.Split(p.FileName, "/")
+	if len(path) == 0 {
+		return ""
+	}
+	return path[0]
+}
+
 func (p pathKey) Filename() string {
 	return fmt.Sprintf("%s/%s", p.FileName, p.Original)
 }
@@ -69,7 +78,7 @@ func (s *Storage) Exists(key string) bool {
 
 func (s *Storage) Delete(key string) error {
 	path := s.PathTransformFunc(key)
-	return os.RemoveAll(path.FileName)
+	return os.RemoveAll(path.FirstFilepath())
 }
 
 func (s *Storage) Read(key string) (io.Reader, error) {
