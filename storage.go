@@ -44,7 +44,7 @@ type pathKey struct {
 }
 
 func (p pathKey) Filename() string {
-	return fmt.Sprintf("%s%s", p.FileName, p.Original)
+	return fmt.Sprintf("%s/%s", p.FileName, p.Original)
 }
 
 type Storage struct {
