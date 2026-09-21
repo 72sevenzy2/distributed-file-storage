@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"strings"
 )
@@ -58,6 +60,18 @@ func NewStorage(s StorageOpts) *Storage {
 	}
 }
 
+func (s *Storage) Exists(key string) bool {
+	path := s.PathTransformFunc(key)
+
+	_, err := os.Stat(path.FileName)
+	return errors.Is(err, fs.ErrNotExist)
+}
+
+func (s *Storage) Delete(key string) error {
+	path := s.PathTransformFunc(key)
+	return os.RemoveAll(path.FileName)
+}
+
 func (s *Storage) Read(key string) (io.Reader, error) {
 	f, err := s.readStream(key)
 	if err != nil {
@@ -86,6 +100,7 @@ func (s *Storage) writeToStream(key string, r io.Reader) error {
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 
 	n, err := io.Copy(f, r)
 	if err != nil {

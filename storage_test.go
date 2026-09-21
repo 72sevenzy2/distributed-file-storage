@@ -6,6 +6,23 @@ import (
 	"testing"
 )
 
+func TestDeleteFile(t *testing.T) {
+	storeOps := StorageOpts{
+		PathTransformFunc: TransformPathFunc,
+	}
+	store := NewStorage(storeOps)
+	key := "somekey"
+	bytesData := []byte("some jpeg")
+
+	if err := store.writeToStream(key, bytes.NewReader(bytesData)); err != nil {
+		t.Error(err)
+	}
+
+	if err := store.Delete(key); err != nil {
+		t.Error(err)
+	}
+}
+
 func TestStorage(t *testing.T) {
 	storeOps := StorageOpts{
 		PathTransformFunc: TransformPathFunc,
