@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"testing"
 )
@@ -43,4 +44,5 @@ func TestStorage(t *testing.T) {
 	if string(b) != string(bytesData) {
 		t.Errorf("invalid bytes read, have %s, want %s", string(b), string(bytesData))
 	}
+	fmt.Println(string(b))
 }

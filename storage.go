@@ -111,7 +111,8 @@ func (s *Storage) Read(key string) (io.Reader, error) {
 
 func (s *Storage) readStream(key string) (io.ReadCloser, error) {
 	path := s.PathTransformFunc(key)
-	return os.Open(path.Filename())
+	pathWithRoot := fmt.Sprintf("%s/%s", s.Root, path.Filename())
+	return os.Open(pathWithRoot)
 }
 
 func (s *Storage) writeToStream(key string, r io.Reader) error {
@@ -132,7 +133,7 @@ func (s *Storage) writeToStream(key string, r io.Reader) error {
 		return err
 	}
 
-	fmt.Printf("number of bytes written to disk: %d, to path %s", n, filename)
+	fmt.Printf("number of bytes written to disk: %d, to path %s\n", n, filename)
 
 	return nil
 }
