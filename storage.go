@@ -34,8 +34,12 @@ func TransformPathFunc(key string) pathKey {
 type PathTransformFunc func(string) pathKey
 
 type StorageOpts struct {
+	// Root defines the root folder of the nested folders or files.
+	Root              string
 	PathTransformFunc PathTransformFunc
 }
+
+const DefaultRootFolder = "defaultRoot"
 
 func DefaultPathTransformFunc(v string) pathKey {
 	return pathKey{
@@ -70,6 +74,9 @@ func NewStorage(s StorageOpts) *Storage {
 	if s.PathTransformFunc == nil {
 		s.PathTransformFunc = DefaultPathTransformFunc
 	}
+	if s.Root == "" {
+		s.Root = DefaultRootFolder
+	}
 
 	return &Storage{
 		StorageOpts: s,
@@ -85,6 +92,7 @@ func (s *Storage) Exists(key string) bool {
 
 func (s *Storage) Delete(key string) error {
 	path := s.PathTransformFunc(key)
+	defer func() { fmt.Println("deleted path from disk:", path) }()
 	return os.RemoveAll(path.FirstFilepath())
 }
 
@@ -108,10 +116,11 @@ func (s *Storage) readStream(key string) (io.ReadCloser, error) {
 
 func (s *Storage) writeToStream(key string, r io.Reader) error {
 	path := s.PathTransformFunc(key)
-	if err := os.MkdirAll(path.FileName, os.ModePerm); err != nil {
+	pathWithRoot := fmt.Sprintf("%s/%s", s.Root, path.FileName)
+	if err := os.MkdirAll(pathWithRoot, os.ModePerm); err != nil {
 		return err
 	}
-	filename := path.Filename()
+	filename := fmt.Sprintf("%s/%s", s.Root, path.Filename())
 	f, err := os.Create(filename)
 	if err != nil {
 		return err
@@ -123,7 +132,7 @@ func (s *Storage) writeToStream(key string, r io.Reader) error {
 		return err
 	}
 
-	fmt.Println("number of bytes written to disk:", n)
+	fmt.Printf("number of bytes written to disk: %d, to path %s", n, filename)
 
 	return nil
 }
