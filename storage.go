@@ -12,6 +12,23 @@ import (
 	"strings"
 )
 
+type PathTransformFunc func(string) pathKey
+
+type pathKey struct {
+	FileName string
+	Original string
+}
+
+// DefaultRootFolder is the default parent directory of a file.
+const DefaultRootFolder = "defaultRoot"
+
+func DefaultPathTransformFunc(v string) pathKey {
+	return pathKey{
+		FileName: v,
+		Original: v,
+	}
+}
+
 func TransformPathFunc(key string) pathKey {
 	hash := sha1.Sum([]byte(key))
 	hashStr := hex.EncodeToString(hash[:])
@@ -31,39 +48,10 @@ func TransformPathFunc(key string) pathKey {
 	}
 }
 
-type PathTransformFunc func(string) pathKey
-
 type StorageOpts struct {
 	// Root defines the root folder of the nested folders or files.
 	Root              string
 	PathTransformFunc PathTransformFunc
-}
-
-const DefaultRootFolder = "defaultRoot"
-
-func DefaultPathTransformFunc(v string) pathKey {
-	return pathKey{
-		FileName: v,
-		Original: v,
-	}
-}
-
-type pathKey struct {
-	FileName string
-	Original string
-}
-
-// FirstFilepath returns the first of the nested directory in .FileName
-func (p pathKey) FirstFilepath() string {
-	path := strings.Split(p.FileName, "/")
-	if len(path) == 0 {
-		return ""
-	}
-	return path[0]
-}
-
-func (p pathKey) Filename() string {
-	return fmt.Sprintf("%s/%s", p.FileName, p.Original)
 }
 
 type Storage struct {
@@ -138,4 +126,17 @@ func (s *Storage) writeToStream(key string, r io.Reader) error {
 	fmt.Printf("number of bytes written to disk: %d, to path %s\n", n, filename)
 
 	return nil
+}
+
+// FirstFilepath returns the first of the nested directory in .FileName
+func (p pathKey) FirstFilepath() string {
+	path := strings.Split(p.FileName, "/")
+	if len(path) == 0 {
+		return ""
+	}
+	return path[0]
+}
+
+func (p pathKey) Filename() string {
+	return fmt.Sprintf("%s/%s", p.FileName, p.Original)
 }
