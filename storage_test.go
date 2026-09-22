@@ -36,10 +36,15 @@ func TestStorage(t *testing.T) {
 		t.Error(err)
 	}
 
+	if ok := store.Exists(key); !ok {
+		t.Error("unknown key:", key)
+	}
+
 	r, err := store.Read(key)
 	if err != nil {
 		t.Error(err)
 	}
+
 	b, _ := io.ReadAll(r)
 	if string(b) != string(bytesData) {
 		t.Errorf("invalid bytes read, have %s, want %s", string(b), string(bytesData))

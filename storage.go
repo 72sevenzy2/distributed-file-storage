@@ -73,9 +73,15 @@ func NewStorage(s StorageOpts) *Storage {
 
 func (s *Storage) Exists(key string) bool {
 	path := s.PathTransformFunc(key)
+	pathWithRoot := fmt.Sprintf("%s/%s", s.Root, path.Filename())
+	fmt.Println(pathWithRoot)
 
-	_, err := os.Stat(path.FileName)
-	return errors.Is(err, fs.ErrNotExist)
+	_, err := os.Stat(pathWithRoot)
+	ok := errors.Is(err, fs.ErrNotExist)
+	if ok {
+		return false
+	}
+	return true
 }
 
 func (s *Storage) Delete(key string) error {
