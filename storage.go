@@ -93,7 +93,9 @@ func (s *Storage) Exists(key string) bool {
 func (s *Storage) Delete(key string) error {
 	path := s.PathTransformFunc(key)
 	defer func() { fmt.Println("deleted path from disk:", path) }()
-	return os.RemoveAll(path.FirstFilepath())
+
+	pathWithRoot := fmt.Sprintf("%s/%s", s.Root, path.FirstFilepath())
+	return os.RemoveAll(pathWithRoot)
 }
 
 func (s *Storage) Read(key string) (io.Reader, error) {
