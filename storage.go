@@ -84,6 +84,10 @@ func (s *Storage) Exists(key string) bool {
 	return true
 }
 
+func (s *Storage) Clear() error {
+	return os.RemoveAll(s.Root)
+}
+
 func (s *Storage) Delete(key string) error {
 	path := s.PathTransformFunc(key)
 	defer func() { fmt.Println("deleted path from disk:", path) }()

@@ -7,11 +7,23 @@ import (
 	"testing"
 )
 
-func TestDeleteFile(t *testing.T) {
-	storeOps := StorageOpts{
+// helper utils
+func newStore() *Storage {
+	opts := StorageOpts{
 		PathTransformFunc: TransformPathFunc,
 	}
-	store := NewStorage(storeOps)
+	return NewStorage(opts)
+}
+
+// for clearing directories after each test run.
+func clearAll(t *testing.T, s *Storage) {
+	if err := s.Clear(); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestDeleteFile(t *testing.T) {
+	store := newStore()
 	key := "somekey"
 	bytesData := []byte("some jpeg")
 
@@ -25,10 +37,9 @@ func TestDeleteFile(t *testing.T) {
 }
 
 func TestStorage(t *testing.T) {
-	storeOps := StorageOpts{
-		PathTransformFunc: TransformPathFunc,
-	}
-	store := NewStorage(storeOps)
+	store := newStore()
+	defer clearAll(t, store)
+
 	key := "somekey"
 	bytesData := []byte("some jpeg")
 
