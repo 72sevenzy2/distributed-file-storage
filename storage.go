@@ -38,7 +38,10 @@ type StorageOpts struct {
 }
 
 func DefaultPathTransformFunc(v string) pathKey {
-	return pathKey{}
+	return pathKey{
+		FileName: v,
+		Original: v,
+	}
 }
 
 type pathKey struct {
@@ -64,6 +67,10 @@ type Storage struct {
 }
 
 func NewStorage(s StorageOpts) *Storage {
+	if s.PathTransformFunc == nil {
+		s.PathTransformFunc = DefaultPathTransformFunc
+	}
+
 	return &Storage{
 		StorageOpts: s,
 	}
