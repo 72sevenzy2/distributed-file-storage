@@ -8,7 +8,7 @@ import (
 )
 
 type Transport interface {
-	ListenAndAccept()
+	ListenAndAccept() error
 	Consume() <-chan TCPNode
 }
 
@@ -43,16 +43,15 @@ func (n *TCPTransport) Consume() <-chan TCPNode {
 	return n.TCPNodeCh
 }
 
-func (n *TCPTransport) ListenAndAccept() {
+func (n *TCPTransport) ListenAndAccept() error {
 	ln, err := net.Listen("tcp", n.ListenAddr)
 	if err != nil {
-		n.Logger.Error("ERR", "TCP_HANDSHAKE_ERR", err)
-		return
+		return err
 	}
 
 	n.listener = ln
-
 	go n.acceptLoop()
+	return nil
 }
 
 func (n *TCPTransport) acceptLoop() {
