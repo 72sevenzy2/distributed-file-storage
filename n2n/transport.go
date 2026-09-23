@@ -12,29 +12,33 @@ type Transport interface {
 	Consume() <-chan TCPNode
 }
 
-type TCPTransport struct {
+type TCPTransportOpts struct {
 	ListenAddr  string
-	Logger      slog.Logger
 	Decoder     Decoder
-	listener    net.Listener
 	Handshakefn Handshaker
 
 	// OnPeer represents the Peers state upon establishing the connection to the server.
 	// Allows for pre-flight validation before the connection is established.
-	OnPeer    func(TCPNode) error
+	OnPeer func(TCPNode) error
+}
+
+type TCPTransport struct {
+	TCPTransportOpts
+
+	Logger   slog.Logger
+	listener net.Listener
+
+	// TCPNodeCh represents a channel in which peers will send and receive data.
 	TCPNodeCh chan TCPNode
 }
 
 func NOPOnPeer(v TCPNode) error { return nil }
 
-func NewTCPTransport(Addr string, onPeer func(TCPNode) error) Transport {
+func NewTCPTransport(opts TCPTransportOpts) Transport {
 	return &TCPTransport{
-		ListenAddr:  Addr,
-		Decoder:     &NOPDecoder{},
-		Logger:      *slog.Default(),
-		Handshakefn: &TCPHandshake{},
-		OnPeer:      onPeer,
-		TCPNodeCh:   make(chan TCPNode),
+		TCPTransportOpts: opts,
+		Logger:           *slog.Default(),
+		TCPNodeCh:        make(chan TCPNode),
 	}
 }
 
