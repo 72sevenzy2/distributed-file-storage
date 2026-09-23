@@ -7,15 +7,33 @@ import (
 )
 
 func main() {
-	c := n2n.NewTCPTransport(":9000", n2n.NOPOnPeer)
-	c.ListenAndAccept()
+	tcpOpts := n2n.TCPTransportOpts{
+		ListenAddr:  ":9000",
+		Decoder:     &n2n.NOPDecoder{},
+		Handshakefn: &n2n.TCPHandshake{},
+	}
+
+	tcp := n2n.NewTCPTransport(tcpOpts)
+
+	fileStoreOpts := FileServerOpts{
+		StorageRoot:       "some_root",
+		PathTransformFunc: TransformPathFunc,
+		Transport:         tcp,
+	}
 
 	go func() {
 		for {
-			msg := <-c.Consume()
-			fmt.Println("message:\n", msg.Payload)
+			msg := <-tcp.Consume()
+			fmt.Println(msg)
 		}
 	}()
+
+	server := NewFileServer(fileStoreOpts)
+
+	if err := server.Run(); err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	select {}
 }
