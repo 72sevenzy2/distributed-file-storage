@@ -25,27 +25,29 @@ func TestStorage(t *testing.T) {
 	store := newStore()
 	defer clearAll(t, store)
 
-	key := "somekey"
-	bytesData := []byte("some jpeg")
+	for v := 0; v < 50; v++ {
+		key := fmt.Sprintf("path_%d", v)
+		bytesData := []byte("some jpeg")
 
-	if err := store.writeToStream(key, bytes.NewReader(bytesData)); err != nil {
-		t.Error(err)
-	}
+		if err := store.writeToStream(key, bytes.NewReader(bytesData)); err != nil {
+			t.Error(err)
+		}
 
-	if ok := store.Exists(key); !ok {
-		t.Error("unknown key:", key)
-	}
+		if ok := store.Exists(key); !ok {
+			t.Error("unknown key:", key)
+		}
 
-	r, err := store.Read(key)
-	if err != nil {
-		t.Error(err)
-	}
+		r, err := store.Read(key)
+		if err != nil {
+			t.Error(err)
+		}
 
-	b, _ := io.ReadAll(r)
-	if string(b) != string(bytesData) {
-		t.Errorf("invalid bytes read, have %s, want %s", string(b), string(bytesData))
+		b, _ := io.ReadAll(r)
+		if string(b) != string(bytesData) {
+			t.Errorf("invalid bytes read, have %s, want %s", string(b), string(bytesData))
+		}
+		fmt.Println(string(b))
 	}
-	fmt.Println(string(b))
 }
 
 // helper utils
