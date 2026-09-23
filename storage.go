@@ -84,10 +84,6 @@ func (s *Storage) Exists(key string) bool {
 	return true
 }
 
-func (s *Storage) Clear() error {
-	return os.RemoveAll(s.Root)
-}
-
 func (s *Storage) Delete(key string) error {
 	path := s.PathTransformFunc(key)
 	defer func() { fmt.Println("deleted path from disk:", path) }()
@@ -107,6 +103,14 @@ func (s *Storage) Read(key string) (io.Reader, error) {
 	buf := new(bytes.Buffer)
 	_, err = io.Copy(buf, f)
 	return buf, err
+}
+
+func (s *Storage) Write(key string, r io.Reader) error {
+	return s.writeToStream(key, r)
+}
+
+func (s *Storage) Clear() error {
+	return os.RemoveAll(s.Root)
 }
 
 func (s *Storage) readStream(key string) (io.ReadCloser, error) {
