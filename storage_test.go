@@ -7,21 +7,6 @@ import (
 	"testing"
 )
 
-// helper utils
-func newStore() *Storage {
-	opts := StorageOpts{
-		PathTransformFunc: TransformPathFunc,
-	}
-	return NewStorage(opts)
-}
-
-// for clearing directories after each test run.
-func clearAll(t *testing.T, s *Storage) {
-	if err := s.Clear(); err != nil {
-		t.Error(err)
-	}
-}
-
 func TestDeleteFile(t *testing.T) {
 	store := newStore()
 	key := "somekey"
@@ -61,4 +46,19 @@ func TestStorage(t *testing.T) {
 		t.Errorf("invalid bytes read, have %s, want %s", string(b), string(bytesData))
 	}
 	fmt.Println(string(b))
+}
+
+// helper utils
+func newStore() *Storage {
+	opts := StorageOpts{
+		PathTransformFunc: TransformPathFunc,
+	}
+	return NewStorage(opts)
+}
+
+// for clearing directories after each test run.
+func clearAll(t *testing.T, s *Storage) {
+	if err := s.Clear(); err != nil {
+		t.Error(err)
+	}
 }
