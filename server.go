@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/72sevenzy2/file-storage/n2n"
 )
@@ -32,7 +33,16 @@ func NewFileServer(fs FileServerOpts) *FileServer {
 	}
 }
 
+func (fs *FileServer) Stop() {
+	close(fs.quitChan)
+}
+
 func (fs *FileServer) loop() {
+	defer func() {
+		log.Println("file server stopped running.")
+		fs.Transport.Close() // cleanup after file server has closed.
+	}()
+
 	for {
 		select {
 		case msg := <-fs.Transport.Consume():
