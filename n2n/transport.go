@@ -104,7 +104,7 @@ func (n *TCPTransport) readLoop(conn net.Conn, peer TCPNode) error {
 		if err := n.Decoder.Decode(conn, &peer); err != nil {
 			conn.Close()
 			n.Logger.Error("ERR", "TCP_DECODING_ERR", err)
-			return err
+			continue
 		}
 		peer.Addr = conn.RemoteAddr()
 		peer.Conn = conn
