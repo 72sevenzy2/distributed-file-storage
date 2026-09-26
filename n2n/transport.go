@@ -10,6 +10,7 @@ import (
 type Transport interface {
 	ListenAndAccept() error
 	Consume() <-chan TCPNode
+	Close() error
 }
 
 type TCPTransportOpts struct {
@@ -40,6 +41,11 @@ func NewTCPTransport(opts TCPTransportOpts) Transport {
 		Logger:           *slog.Default(),
 		TCPNodeCh:        make(chan TCPNode),
 	}
+}
+
+// Close() implements the Transport interface.
+func (n *TCPTransport) Close() error {
+	return n.listener.Close()
 }
 
 // Consume() implements Transport interface.
