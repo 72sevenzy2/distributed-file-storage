@@ -21,12 +21,12 @@ func main() {
 		Transport:         tcp,
 	}
 
-	go func() {
-		for {
-			msg := <-tcp.Consume()
-			fmt.Println(msg)
-		}
-	}()
+	//go func() {
+	//for {
+	//msg := <-tcp.Consume()
+	//		fmt.Println(msg)
+	//}
+	//}()
 
 	server := NewFileServer(fileStoreOpts)
 

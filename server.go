@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/72sevenzy2/file-storage/n2n"
 )
 
@@ -13,6 +15,8 @@ type FileServerOpts struct {
 type FileServer struct {
 	FileServerOpts
 	store *Storage
+
+	quitChan chan struct{}
 }
 
 func NewFileServer(fs FileServerOpts) *FileServer {
@@ -24,6 +28,18 @@ func NewFileServer(fs FileServerOpts) *FileServer {
 	return &FileServer{
 		FileServerOpts: fs,
 		store:          NewStorage(storeOpts),
+		quitChan:       make(chan struct{}),
+	}
+}
+
+func (fs *FileServer) loop() {
+	for {
+		select {
+		case msg := <-fs.Transport.Consume():
+			fmt.Println(msg)
+		case <-fs.quitChan:
+			return
+		}
 	}
 }
 
@@ -31,5 +47,8 @@ func (fs *FileServer) Run() error {
 	if err := fs.Transport.ListenAndAccept(); err != nil {
 		return err
 	}
+
+	fs.loop()
+
 	return nil
 }
