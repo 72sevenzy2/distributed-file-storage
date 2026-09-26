@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/72sevenzy2/file-storage/n2n"
 )
@@ -23,11 +22,6 @@ func main() {
 	}
 
 	server := NewFileServer(fileStoreOpts)
-
-	go func() {
-		time.Sleep(time.Second * 10)
-		server.Stop()
-	}()
 
 	if err := server.Run(); err != nil {
 		fmt.Println(err)

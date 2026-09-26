@@ -10,14 +10,20 @@ type Node interface {
 }
 
 // TCPNode represents the remote nodes connection methodology.
-type TCPNode struct {
-	Payload []byte
-	Addr    net.Addr
-	Conn    net.Conn
+type Peer struct {
+	Conn     net.Conn
+	outbound bool
+}
+
+func NewPeer(conn net.Conn, outbound bool) *Peer {
+	return &Peer{
+		Conn:     conn,
+		outbound: outbound,
+	}
 }
 
 // Close() implements the Node interface.
-func (n *TCPNode) Close() error {
+func (n *Peer) Close() error {
 	if n.Conn == nil { // safeguards against nil connections if it were closed elsewhere.
 		return nil
 	}
