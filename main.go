@@ -22,13 +22,6 @@ func main() {
 		Transport:         tcp,
 	}
 
-	//go func() {
-	//for {
-	//msg := <-tcp.Consume()
-	//		fmt.Println(msg)
-	//}
-	//}()
-
 	server := NewFileServer(fileStoreOpts)
 
 	go func() {
@@ -40,6 +33,4 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-
-	select {}
 }
