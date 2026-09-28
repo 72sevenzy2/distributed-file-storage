@@ -53,6 +53,16 @@ func (n *TCPTransport) Consume() <-chan Peer {
 	return n.TCPNodeCh
 }
 
+func (n *TCPTransport) Dial(addr string) error {
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		return err
+	}
+
+	n.handleConn(conn, true)
+	return nil
+}
+
 func (n *TCPTransport) ListenAndAccept() error {
 	ln, err := net.Listen("tcp", n.ListenAddr)
 	if err != nil {
@@ -74,8 +84,6 @@ func (n *TCPTransport) acceptLoop() {
 			conn.Close()
 		}() // runs when the connection is closed.
 
-		peer := NewPeer(conn, false)
-
 		conn, err = n.Handshakefn.HandshakeFn(n.listener)
 		if err != nil {
 			if errors.Is(err, net.ErrClosed) {
@@ -86,23 +94,26 @@ func (n *TCPTransport) acceptLoop() {
 			continue
 		}
 
-		if n.OnPeer != nil {
-			if err = n.OnPeer(*peer); err != nil {
-				return
-			}
-		}
-
-		go n.readLoop(conn, *peer)
+		go n.handleConn(conn, false)
 	}
 }
 
-func (n *TCPTransport) readLoop(conn net.Conn, peer Peer) error {
+func (n *TCPTransport) handleConn(conn net.Conn, outbound bool) error {
+	// check if OnPeer func was provided.
+	peer := NewPeer(conn, outbound)
+
+	if n.OnPeer != nil {
+		if err := n.OnPeer(*peer); err != nil {
+			return nil
+		}
+	}
+
 	// readloop
-	RPC := &RPC{}
+	RPC := RPC{}
 	for {
 		n.Logger.Info("INCOMING_CONNECTION", "addr", conn.RemoteAddr().String())
 
-		if err := n.Decoder.Decode(conn, RPC); err != nil {
+		if err := n.Decoder.Decode(conn, &RPC); err != nil {
 			conn.Close()
 			n.Logger.Error("ERR", "TCP_DECODING_ERR", err)
 			continue
@@ -110,6 +121,6 @@ func (n *TCPTransport) readLoop(conn net.Conn, peer Peer) error {
 		RPC.From = conn.RemoteAddr().String()
 		peer.Conn = conn
 
-		n.TCPNodeCh <- peer
+		n.TCPNodeCh <- *peer
 	}
 }
