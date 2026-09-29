@@ -6,9 +6,9 @@ import (
 	"github.com/72sevenzy2/file-storage/n2n"
 )
 
-func main() {
+func newServer(addr string, nodes ...string) *FileServer {
 	tcpOpts := n2n.TCPTransportOpts{
-		ListenAddr:  ":9000",
+		ListenAddr:  addr,
 		Decoder:     &n2n.NOPDecoder{},
 		Handshakefn: &n2n.TCPHandshake{},
 	}
@@ -19,13 +19,27 @@ func main() {
 		StorageRoot:       "some_root",
 		PathTransformFunc: TransformPathFunc,
 		Transport:         tcp,
-		bootStrapNodes:    []string{":4000"},
+		bootStrapNodes:    nodes,
 	}
 
-	server := NewFileServer(fileStoreOpts)
+	return NewFileServer(fileStoreOpts)
+}
 
-	if err := server.Run(); err != nil {
+func main() {
+	server := newServer(":9000", "")
+	server2 := newServer(":8000", ":9000")
+
+	go func() {
+		if err := server.Run(); err != nil {
+			fmt.Println(err)
+			server.Stop()
+			return
+		}
+	}()
+
+	if err := server2.Run(); err != nil {
 		fmt.Println(err)
+		server2.Stop()
 		return
 	}
 }
