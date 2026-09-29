@@ -20,7 +20,7 @@ type FileServer struct {
 	store *Storage
 
 	mu       sync.Mutex
-	Peers    map[string]*n2n.Node
+	Peers    map[string]*n2n.Peer
 	quitChan chan struct{}
 }
 
@@ -33,7 +33,7 @@ func NewFileServer(fs FileServerOpts) *FileServer {
 	return &FileServer{
 		FileServerOpts: fs,
 		store:          NewStorage(storeOpts),
-		Peers:          make(map[string]*n2n.Node),
+		Peers:          make(map[string]*n2n.Peer),
 		quitChan:       make(chan struct{}),
 	}
 }
@@ -42,7 +42,7 @@ func (fs *FileServer) Stop() {
 	close(fs.quitChan)
 }
 
-func (s *FileServer) OnPeer(p n2n.Node) error {
+func (s *FileServer) OnPeer(p n2n.Peer) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.Peers[p.RemoteAddr().String()] = &p

@@ -22,7 +22,10 @@ func newServer(addr string, nodes ...string) *FileServer {
 		bootStrapNodes:    nodes,
 	}
 
-	return NewFileServer(fileStoreOpts)
+	s := NewFileServer(fileStoreOpts)
+	tcpOpts.OnPeer = s.OnPeer
+
+	return s
 }
 
 func main() {
