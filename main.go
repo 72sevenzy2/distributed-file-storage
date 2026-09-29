@@ -19,6 +19,7 @@ func main() {
 		StorageRoot:       "some_root",
 		PathTransformFunc: TransformPathFunc,
 		Transport:         tcp,
+		bootStrapNodes:    []string{":4000"},
 	}
 
 	server := NewFileServer(fileStoreOpts)

@@ -11,6 +11,7 @@ type Transport interface {
 	ListenAndAccept() error
 	Consume() <-chan Peer
 	Close() error
+	Dial(string) error
 }
 
 type TCPTransportOpts struct {
@@ -53,6 +54,7 @@ func (n *TCPTransport) Consume() <-chan Peer {
 	return n.TCPNodeCh
 }
 
+// Dial() implements the Transport interface.
 func (n *TCPTransport) Dial(addr string) error {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
@@ -99,16 +101,16 @@ func (n *TCPTransport) acceptLoop() {
 }
 
 func (n *TCPTransport) handleConn(conn net.Conn, outbound bool) error {
+	var err error
 	// check if OnPeer func was provided.
 	peer := NewPeer(conn, outbound)
 
 	if n.OnPeer != nil {
-		if err := n.OnPeer(*peer); err != nil {
+		if err = n.OnPeer(*peer); err != nil {
 			return nil
 		}
 	}
 
-	// readloop
 	RPC := RPC{}
 	for {
 		n.Logger.Info("INCOMING_CONNECTION", "addr", conn.RemoteAddr().String())
