@@ -7,6 +7,7 @@ import (
 // Node represents a remote connection.
 type Node interface {
 	Close() error
+	RemoteAddr() net.Addr
 }
 
 // TCPNode represents the remote nodes connection methodology.
@@ -20,6 +21,11 @@ func NewPeer(conn net.Conn, outbound bool) *Peer {
 		Conn:     conn,
 		outbound: outbound,
 	}
+}
+
+// RemoteAddr implements the Node interface.
+func (n *Peer) RemoteAddr() net.Addr {
+	return n.Conn.RemoteAddr()
 }
 
 // Close() implements the Node interface.

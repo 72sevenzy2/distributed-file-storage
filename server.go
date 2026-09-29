@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/72sevenzy2/file-storage/n2n"
 )
@@ -18,6 +19,8 @@ type FileServer struct {
 	FileServerOpts
 	store *Storage
 
+	mu       sync.Mutex
+	Peers    map[string]*n2n.Node
 	quitChan chan struct{}
 }
 
@@ -30,12 +33,22 @@ func NewFileServer(fs FileServerOpts) *FileServer {
 	return &FileServer{
 		FileServerOpts: fs,
 		store:          NewStorage(storeOpts),
+		Peers:          make(map[string]*n2n.Node),
 		quitChan:       make(chan struct{}),
 	}
 }
 
 func (fs *FileServer) Stop() {
 	close(fs.quitChan)
+}
+
+func (s *FileServer) OnPeer(p n2n.Node) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.Peers[p.RemoteAddr().String()] = &p
+
+	log.Printf("connected with remote peer %s", p.RemoteAddr().String())
+	return nil
 }
 
 func (fs *FileServer) loop() {
