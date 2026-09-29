@@ -11,6 +11,7 @@ type FileServerOpts struct {
 	StorageRoot       string
 	PathTransformFunc PathTransformFunc
 	Transport         n2n.Transport
+	bootStrapNodes    []string
 }
 
 type FileServer struct {
@@ -53,10 +54,22 @@ func (fs *FileServer) loop() {
 	}
 }
 
+func (fs *FileServer) bootstrapNetwork() error {
+	for _, addr := range fs.bootStrapNodes {
+		go func(addr string) {
+			if err := fs.Transport.Dial(addr); err != nil {
+				fmt.Println("dial err", err)
+			}
+		}(addr)
+	}
+	return nil
+}
+
 func (fs *FileServer) Run() error {
 	if err := fs.Transport.ListenAndAccept(); err != nil {
 		return err
 	}
+	fs.bootstrapNetwork()
 
 	fs.loop()
 
