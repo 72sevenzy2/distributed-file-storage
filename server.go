@@ -56,6 +56,10 @@ func (fs *FileServer) loop() {
 
 func (fs *FileServer) bootstrapNetwork() error {
 	for _, addr := range fs.bootStrapNodes {
+		if addr == "" { // skip empty strings given as peer addresses
+			continue
+		}
+
 		go func(addr string) {
 			if err := fs.Transport.Dial(addr); err != nil {
 				fmt.Println("dial err", err)
@@ -69,7 +73,9 @@ func (fs *FileServer) Run() error {
 	if err := fs.Transport.ListenAndAccept(); err != nil {
 		return err
 	}
-	fs.bootstrapNetwork()
+	if len(fs.bootStrapNodes) != 0 { // fast path
+		fs.bootstrapNetwork()
+	}
 
 	fs.loop()
 
