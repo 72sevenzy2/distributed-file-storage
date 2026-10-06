@@ -6,6 +6,7 @@ import (
 
 // Node represents a remote connection.
 type Node interface {
+	Send([]byte) error
 	Close() error
 	RemoteAddr() net.Addr
 }
@@ -23,7 +24,14 @@ func NewPeer(conn net.Conn, outbound bool) *Peer {
 	}
 }
 
-// RemoteAddr implements the Node interface.
+// Send() implements the Node interface.
+func (n *Peer) Send(b []byte) error {
+	_, err := n.Conn.Write(b)
+	return err
+}
+
+// RemoteAddr implements the Node interface, and will
+// return the remote address of the underlying connection.
 func (n *Peer) RemoteAddr() net.Addr {
 	return n.Conn.RemoteAddr()
 }
