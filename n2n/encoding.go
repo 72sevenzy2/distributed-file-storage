@@ -18,7 +18,7 @@ func (g *GOBDecoder) Decode(r io.Reader, v *RPC) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(v.Payload)
+	fmt.Println(string(v.Payload))
 	return nil
 }
 
@@ -33,6 +33,6 @@ func (n *NOPDecoder) Decode(r io.Reader, v *RPC) error {
 	}
 
 	v.Payload = buf[:n1]
-	fmt.Println(v.Payload)
+	fmt.Println(string(v.Payload))
 	return nil
 }
